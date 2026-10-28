@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+dist/
+.build/
+.env
+.env.*
+*.img
+*.img.xz
+*.deb
