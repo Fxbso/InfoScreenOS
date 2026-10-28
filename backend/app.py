@@ -42,6 +42,7 @@ def save(v):
   try:
    with os.fdopen(fd,"w",encoding="utf8") as out:
     json.dump(v,out,ensure_ascii=False,indent=2);out.flush();os.fsync(out.fileno())
+   os.chmod(tmp,0o644)
    os.replace(tmp,DATA/"layout.json")
   finally:
    if os.path.exists(tmp): os.unlink(tmp)
@@ -89,6 +90,7 @@ class Handler(BaseHTTPRequestHandler):
    fd,name=tempfile.mkstemp(dir=DATA,prefix=".background-")
    try:
     with os.fdopen(fd,"wb") as out:out.write(b);out.flush();os.fsync(out.fileno())
+    os.chmod(name,0o644)
     os.replace(name,DATA/"background.img")
    finally:
     if os.path.exists(name):os.unlink(name)
