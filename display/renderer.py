@@ -9,6 +9,8 @@ pygame.mouse.set_visible(False)
 fps=pygame.time.Clock()
 layout={}
 last_load=0.0
+background_image=None
+background_mtime=None
 def color(s,default="#ffffff"):
  try:return pygame.Color(s)
  except (TypeError,ValueError):return pygame.Color(default)
@@ -19,6 +21,7 @@ def text(value,x,y,size,colour):
 def redraw():
  width,height=screen.get_size()
  screen.fill(color(layout.get("background","#101b2d"),"#101b2d"))
+ if background_image is not None:screen.blit(pygame.transform.smoothscale(background_image,(width,height)),(0,0))
  text(layout.get("title","KUFGEM InfoScreen"),width*.04,height*.035,height*.045,"#77c6ff")
  for w in layout.get("widgets",[]):
   x=w["x"]*width/100;y=w["y"]*height/100
@@ -36,6 +39,15 @@ while True:
   if event.type==pygame.QUIT:raise SystemExit
  if time.monotonic()-last_load>1:
   last_load=time.monotonic()
+  pic=DATA/"background.img"
+  try:
+   current=pic.stat().st_mtime_ns
+   if current!=background_mtime:
+    background_image=pygame.image.load(str(pic)).convert()
+    background_mtime=current
+  except (OSError,pygame.error):
+   background_image=None
+   background_mtime=None
   try:
    candidate=json.loads((DATA/"layout.json").read_text(encoding="utf8"))
    if isinstance(candidate,dict) and isinstance(candidate.get("widgets"),list):layout=candidate
