@@ -17,6 +17,7 @@ jobs:
         run: |
           echo "Building commit: $(git rev-parse HEAD)"
           grep -Fq -- '--initsystem systemd' vm/build-iso.sh || { echo 'FATAL: systemd build selection missing' >&2; exit 1; }
+          grep -Fq -- '--debian-installer false' vm/build-iso.sh || { echo 'FATAL: old live-build requires installer=false' >&2; exit 1; }
           command -v gpg
           gpg --version
           bash -n vm/build-iso.sh packaging/build-deb.sh
