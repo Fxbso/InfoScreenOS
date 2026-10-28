@@ -8,10 +8,10 @@ command -v dpkg-deb >/dev/null || { echo "Install: sudo apt install dpkg-dev" >&
 command -v gpg >/dev/null || { echo "GnuPG missing: sudo apt install gnupg" >&2; exit 1; }
 OUTPUT="$ROOT/dist"
 BUILD="$ROOT/.build/vm-iso"
-mkdir -p "$BUILD"
+mkdir -p "$BUILD" "$OUTPUT"
 cd "$BUILD"
 sudo lb clean --purge 2>/dev/null || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --initsystem systemd --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer none --apt-recommends false --security false --linux-packages none
+lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --initsystem systemd --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer false --apt-recommends false --security false --linux-packages none
 mkdir -p config/package-lists config/hooks/live config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/xsessions config/includes.chroot/usr/local/bin config/includes.chroot/opt/kufgem-infoscreen config/includes.chroot/etc/systemd/system config/includes.chroot/var/lib/kufgem-infoscreen
 cat >config/package-lists/infoscreen.list.chroot <<'EOF'
 live-boot
