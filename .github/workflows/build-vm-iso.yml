@@ -18,12 +18,60 @@ jobs:
           echo "Building commit: $(git rev-parse HEAD)"
           grep -Fq -- '--initsystem systemd' vm/build-iso.sh || { echo 'FATAL: systemd build selection missing' >&2; exit 1; }
           grep -Fq -- '--debian-installer false' vm/build-iso.sh || { echo 'FATAL: old live-build requires installer=false' >&2; exit 1; }
-          for file in isolinux.bin vesamenu.c32; do
-            test -s "/usr/share/live/build/bootloaders/isolinux/$file" || {
-              echo "FATAL: missing or dangling ISOLINUX file: $file" >&2
-              exit 1
-            }
+          echo "Installed ISOLINUX files:"
+          dpkg -L isolinux | grep -E '/isolinux[.]bin
+          command -v gpg
+          gpg --version
+          bash -n vm/build-iso.sh packaging/build-deb.sh
+          python3 -m compileall -q backend display tests
+          test -f packaging/kufgem-infoscreen-api.service
+          test -f packaging/kufgem-infoscreen-display.service
+          grep -q -- '--security false' vm/build-iso.sh
+          grep -q 'trixie-security' vm/build-iso.sh
+          if grep -Eq '^[[:space:]]*(cp|install).*config/packages.chroot' vm/build-iso.sh; then
+            echo 'Local Debian packages must not be used in the live ISO build' >&2
+            exit 1
+          fi
+      - name: Build VirtualBox ISO
+        run: bash vm/build-iso.sh
+      - name: Upload ISO build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KUFGEM-InfoScreenOS-VM-amd64
+          path: |
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso.sha256
+          retention-days: 7
+ || true
+          ISOLINUX_BIN="$(dpkg -L isolinux | grep -E '/isolinux[.]bin
+          command -v gpg
+          gpg --version
+          bash -n vm/build-iso.sh packaging/build-deb.sh
+          python3 -m compileall -q backend display tests
+          test -f packaging/kufgem-infoscreen-api.service
+          test -f packaging/kufgem-infoscreen-display.service
+          grep -q -- '--security false' vm/build-iso.sh
+          grep -q 'trixie-security' vm/build-iso.sh
+          if grep -Eq '^[[:space:]]*(cp|install).*config/packages.chroot' vm/build-iso.sh; then
+            echo 'Local Debian packages must not be used in the live ISO build' >&2
+            exit 1
+          fi
+      - name: Build VirtualBox ISO
+        run: bash vm/build-iso.sh
+      - name: Upload ISO build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KUFGEM-InfoScreenOS-VM-amd64
+          path: |
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso.sha256
+          retention-days: 7
+ | head -1)"
+          test -n "$ISOLINUX_BIN" && test -s "$ISOLINUX_BIN" || { echo "FATAL: isolinux binary missing" >&2; exit 1; }
+          for file in vesamenu.c32 ldlinux.c32 libcom32.c32 libutil.c32; do
+            test -s "/usr/lib/syslinux/modules/bios/$file" || { echo "FATAL: BIOS module missing: $file" >&2; exit 1; }
           done
+          test -f /usr/share/live/build/bootloaders/isolinux/isolinux.cfg
           command -v gpg
           gpg --version
           bash -n vm/build-iso.sh packaging/build-deb.sh
