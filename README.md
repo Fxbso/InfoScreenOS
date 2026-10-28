@@ -1,5 +1,27 @@
 # KUFGEM InfoScreen OS
 
+## Ubuntu Server – Installation mit einem Befehl
+
+Auf einem frisch installierten Ubuntu Server 24.04 LTS oder 26.04 (amd64/arm64)
+mit Internetzugang, angeschlossenem Bildschirm und sudo-Rechten:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fxbso/InfoScreenOS/main/install-ubuntu.sh | sudo bash
+```
+
+Das Skript installiert X11/LightDM, Python/Pygame, Dashboard und API, richtet
+den automatischen Kiosk-Login ein und startet die Dienste. Danach ist das Dashboard
+im vertrauenswürdigen LAN unter `http://SERVER-IP:8080` erreichbar.
+Den beim Setup ausgegebenen Admin-Token später mit
+`sudo cat /etc/kufgem-infoscreen/admin-token` anzeigen. Optional `sudo reboot`.
+
+**Sicherheit:** Den Installationscode vor Ausführung mit Root-Rechten ansehen;
+der Einzeiler lädt den aktuellen Stand des Branches `main`. Web-API nur in
+vertrauenswürdigen Netzen verwenden (kein HTTPS). Bei erneuter Installation
+bleiben Layout, Hintergrund und Admin-Token erhalten. Für VirtualBox funktioniert
+dieser Weg ebenfalls mit einem regulär installierten Ubuntu Server.
+
+
 Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium or a desktop session. Includes a web management dashboard, a native fullscreen SDL2-based display, Debian packaging and an experimental custom image build recipe.
 
 **Status: 0.1.0-alpha source implementation; not yet field tested on hardware. No downloadable OS image or APT feed is published yet.**
