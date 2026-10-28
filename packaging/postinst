@@ -10,7 +10,8 @@ if [ ! -s /etc/kufgem-infoscreen/admin-token ]; then
  umask 077
  head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/kufgem-infoscreen/admin-token
 fi
-chmod 0600 /etc/kufgem-infoscreen/admin-token
+chown root:infoscreen /etc/kufgem-infoscreen/admin-token
+chmod 0640 /etc/kufgem-infoscreen/admin-token
 if [ -d /run/systemd/system ]; then
  systemctl daemon-reload || true
  systemctl enable kufgem-infoscreen-api.service kufgem-infoscreen-display.service || true
