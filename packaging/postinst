@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+if ! getent passwd infoscreen >/dev/null; then
+ adduser --system --group --home /var/lib/kufgem-infoscreen --no-create-home infoscreen
+fi
+mkdir -p /var/lib/kufgem-infoscreen /etc/kufgem-infoscreen
+chown infoscreen:infoscreen /var/lib/kufgem-infoscreen
+chmod 0750 /var/lib/kufgem-infoscreen
+if [ ! -s /etc/kufgem-infoscreen/admin-token ]; then
+ umask 077
+ head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/kufgem-infoscreen/admin-token
+fi
+chmod 0600 /etc/kufgem-infoscreen/admin-token
+if [ -d /run/systemd/system ]; then
+ systemctl daemon-reload || true
+ systemctl enable kufgem-infoscreen-api.service kufgem-infoscreen-display.service || true
+ systemctl restart kufgem-infoscreen-api.service || true
+ systemctl restart kufgem-infoscreen-display.service || true
+fi
+exit 0
