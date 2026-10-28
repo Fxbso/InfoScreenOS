@@ -79,5 +79,6 @@ class Handler(BaseHTTPRequestHandler):
   except (ValueError,KeyError) as e:self.send_json(400,{"error":str(e)})
 if __name__=="__main__":
  DATA.mkdir(parents=True,exist_ok=True)
+ if not (DATA/"layout.json").exists(): save(copy.deepcopy(DEFAULT))
  host=os.environ.get("INFOSCREEN_HOST","0.0.0.0")
  ThreadingHTTPServer((host,int(os.environ.get("INFOSCREEN_PORT","8080"))),Handler).serve_forever()
