@@ -64,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
    if not background.exists():return self.send_json(404,{"error":"No background"})
    b=background.read_bytes()
    self.send_response(200)
-   self.send_header("Content-Type","image/png" if b.startswith(b"\\x89PNG") else "image/jpeg")
+   self.send_header("Content-Type","image/png" if b.startswith(b"\x89PNG") else "image/jpeg")
    self.send_header("Cache-Control","no-store")
    self.send_header("Content-Length",str(len(b)))
    self.end_headers();self.wfile.write(b);return
@@ -84,7 +84,7 @@ class Handler(BaseHTTPRequestHandler):
    size=int(self.headers.get("Content-Length","0"))
    if size<8 or size>4*1024*1024:return self.send_json(413,{"error":"Image must be under 4 MB"})
    b=self.rfile.read(size)
-   if not (b.startswith(b"\\x89PNG\\r\\n\\x1a\\n") or b.startswith(b"\\xff\\xd8\\xff")):return self.send_json(400,{"error":"Only PNG/JPEG allowed"})
+   if not (b.startswith(b"\x89PNG\\r\\n\x1a\\n") or b.startswith(b"\xff\xd8\xff")):return self.send_json(400,{"error":"Only PNG/JPEG allowed"})
    DATA.mkdir(parents=True,exist_ok=True)
    fd,name=tempfile.mkstemp(dir=DATA,prefix=".background-")
    try:
