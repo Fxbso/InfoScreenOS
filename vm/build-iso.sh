@@ -11,7 +11,7 @@ BUILD="$ROOT/.build/vm-iso"
 mkdir -p "$BUILD"
 cd "$BUILD"
 sudo lb clean --purge 2>/dev/null || true
-lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer none --apt-recommends false
+lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer none --apt-recommends false --security false
 mkdir -p config/package-lists config/packages.chroot config/hooks/live config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/xsessions config/includes.chroot/usr/local/bin
 cat >config/package-lists/infoscreen.list.chroot <<'EOF'
 live-boot
@@ -59,6 +59,13 @@ systemctl disable kufgem-infoscreen-display.service || true
 systemctl enable kufgem-infoscreen-api.service lightdm.service NetworkManager.service || true
 EOF
 chmod +x config/hooks/live/9990-vm-services.hook.chroot
+# Ubuntu's older live-build generates the obsolete trixie/updates security suite.
+# The VM-only development live ISO disables that generator; security updates
+# are provided using Debian's official trixie-security suite in the live filesystem.
+mkdir -p config/includes.chroot/etc/apt/sources.list.d
+cat >config/includes.chroot/etc/apt/sources.list.d/infoscreen-security.list <<'EOF'
+deb https://security.debian.org/debian-security trixie-security main
+EOF
 sudo lb build
 ISO="$(find . -maxdepth 1 -name '*.iso' -print -quit)"
 test -n "$ISO"
