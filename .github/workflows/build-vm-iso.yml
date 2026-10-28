@@ -23,6 +23,10 @@ jobs:
           test -f packaging/kufgem-infoscreen-display.service
           grep -q -- '--security false' vm/build-iso.sh
           grep -q 'trixie-security' vm/build-iso.sh
+          if grep -Eq '^[[:space:]]*(cp|install).*config/packages.chroot' vm/build-iso.sh; then
+            echo 'Local Debian packages must not be used in the live ISO build' >&2
+            exit 1
+          fi
       - name: Build VirtualBox ISO
         run: bash vm/build-iso.sh
       - name: Upload ISO build artifact
