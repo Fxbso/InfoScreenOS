@@ -11,7 +11,7 @@ BUILD="$ROOT/.build/vm-iso"
 mkdir -p "$BUILD"
 cd "$BUILD"
 sudo lb clean --purge 2>/dev/null || true
-lb config --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --archive-areas "main non-free-firmware" --debian-installer none --apt-recommends false
+lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer none --apt-recommends false
 mkdir -p config/package-lists config/packages.chroot config/hooks/live config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/xsessions config/includes.chroot/usr/local/bin
 cat >config/package-lists/infoscreen.list.chroot <<'EOF'
 live-boot
