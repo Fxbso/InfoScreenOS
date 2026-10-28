@@ -24,9 +24,12 @@ test -n "$ISOLINUX_BIN" && test -s "$ISOLINUX_BIN" || {
 test -s "$BIOS_MODULES/vesamenu.c32" || {
   echo "FATAL: Syslinux BIOS modules missing" >&2; exit 1;
 }
+rm -f config/bootloaders/isolinux/isolinux.bin
 cp -L "$ISOLINUX_BIN" config/bootloaders/isolinux/isolinux.bin
 for module in "$BIOS_MODULES"/*.c32; do
-  cp -L "$module" config/bootloaders/isolinux/
+  target="config/bootloaders/isolinux/$(basename "$module")"
+  rm -f "$target"
+  cp -L "$module" "$target"
 done
 test -s config/bootloaders/isolinux/isolinux.bin
 test -s config/bootloaders/isolinux/vesamenu.c32
