@@ -1,0 +1,19 @@
+name: Build ARM64 package
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['backend/**','display/**','dashboard/**','packaging/**','.github/workflows/build-deb.yml']
+jobs:
+  package:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests
+      - name: Build Debian package
+        run: bash packaging/build-deb.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kufgem-infoscreen-arm64
+          path: dist/*.deb
