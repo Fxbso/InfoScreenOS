@@ -59,6 +59,15 @@ class Handler(BaseHTTPRequestHandler):
   return bool(expected) and secrets.compare_digest(self.headers.get("Authorization",""),"Bearer "+expected)
  def do_GET(self):
   path=urlsplit(self.path).path
+  if path=="/api/background":
+   background=DATA/"background.img"
+   if not background.exists():return self.send_json(404,{"error":"No background"})
+   b=background.read_bytes()
+   self.send_response(200)
+   self.send_header("Content-Type","image/png" if b.startswith(b"\\x89PNG") else "image/jpeg")
+   self.send_header("Cache-Control","no-store")
+   self.send_header("Content-Length",str(len(b)))
+   self.end_headers();self.wfile.write(b);return
   if path=="/api/health": return self.send_json(200,{"ok":True})
   if path=="/api/config":
    if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
@@ -68,6 +77,23 @@ class Handler(BaseHTTPRequestHandler):
   self.send_response(200);self.send_header("Content-Type","text/html; charset=utf-8")
   self.send_header("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:")
   self.send_header("Content-Length",str(len(b)));self.end_headers();self.wfile.write(b)
+ def do_POST(self):
+  if urlsplit(self.path).path!="/api/background":return self.send_json(404,{"error":"Not found"})
+  if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
+  try:
+   size=int(self.headers.get("Content-Length","0"))
+   if size<8 or size>4*1024*1024:return self.send_json(413,{"error":"Image must be under 4 MB"})
+   b=self.rfile.read(size)
+   if not (b.startswith(b"\\x89PNG\\r\\n\\x1a\\n") or b.startswith(b"\\xff\\xd8\\xff")):return self.send_json(400,{"error":"Only PNG/JPEG allowed"})
+   DATA.mkdir(parents=True,exist_ok=True)
+   fd,name=tempfile.mkstemp(dir=DATA,prefix=".background-")
+   try:
+    with os.fdopen(fd,"wb") as out:out.write(b);out.flush();os.fsync(out.fileno())
+    os.replace(name,DATA/"background.img")
+   finally:
+    if os.path.exists(name):os.unlink(name)
+   return self.send_json(200,{"ok":True})
+  except ValueError as e:return self.send_json(400,{"error":str(e)})
  def do_PUT(self):
   if urlsplit(self.path).path!="/api/config":return self.send_json(404,{"error":"Not found"})
   if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
