@@ -1,9 +1,6 @@
 name: Build ARM64 package
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['backend/**','display/**','dashboard/**','packaging/**','.github/workflows/build-deb.yml']
 jobs:
   package:
     runs-on: ubuntu-24.04-arm
