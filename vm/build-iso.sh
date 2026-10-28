@@ -106,7 +106,25 @@ mkdir -p config/includes.chroot/etc/apt/sources.list.d
 cat >config/includes.chroot/etc/apt/sources.list.d/infoscreen-security.list <<'EOF'
 deb https://security.debian.org/debian-security trixie-security main
 EOF
-sudo lb build
+# Run stages separately: with --linux-packages none the legacy builder does
+# not transfer the kernel to binary/live, even though linux-image-amd64 was
+# installed explicitly in the chroot. Syslinux expects these files there.
+sudo lb bootstrap
+sudo lb chroot
+shopt -s nullglob
+kernels=(chroot/boot/vmlinuz-*)
+test "${#kernels[@]}" -eq 1 || {
+  echo "Expected exactly one kernel in chroot/boot; found ${#kernels[@]}" >&2
+  exit 1
+}
+version="${kernels[0]##*/vmlinuz-}"
+initrd="chroot/boot/initrd.img-$version"
+test -s "$initrd" || { echo "Missing initramfs: $initrd" >&2; exit 1; }
+sudo mkdir -p binary/live
+sudo cp "${kernels[0]}" "$initrd" binary/live/
+test -s "binary/live/vmlinuz-$version"
+test -s "binary/live/initrd.img-$version"
+sudo lb binary
 ISO="$(find . -maxdepth 1 -name '*.iso' -print -quit)"
 test -n "$ISO"
 cp "$ISO" "$OUTPUT/KUFGEM-InfoScreenOS-VM-amd64.iso"
