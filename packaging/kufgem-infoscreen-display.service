@@ -1,0 +1,16 @@
+[Unit]
+Description=KUFGEM InfoScreen native HDMI display
+After=systemd-user-sessions.service
+[Service]
+Type=simple
+User=infoscreen
+Group=infoscreen
+SupplementaryGroups=video render input
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_AUDIODRIVER=dummy
+Environment=INFOSCREEN_DATA_DIR=/var/lib/kufgem-infoscreen
+ExecStart=/usr/bin/python3 /opt/kufgem-infoscreen/display/renderer.py
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
