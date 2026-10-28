@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [[ "$(uname -m)" != "x86_64" ]]; then echo "Use an amd64 Debian builder" >&2; exit 1; fi
 command -v lb >/dev/null || { echo "Install: sudo apt install live-build" >&2; exit 1; }
 command -v dpkg-deb >/dev/null || { echo "Install: sudo apt install dpkg-dev" >&2; exit 1; }
+command -v gpg >/dev/null || { echo "GnuPG missing: sudo apt install gnupg" >&2; exit 1; }
 ARCH=amd64 bash "$ROOT/packaging/build-deb.sh"
 OUTPUT="$ROOT/dist"
 BUILD="$ROOT/.build/vm-iso"
@@ -29,6 +30,7 @@ python3
 python3-pygame
 libsdl2-2.0-0
 ca-certificates
+gnupg
 network-manager
 sudo
 EOF
