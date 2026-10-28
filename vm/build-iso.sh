@@ -12,6 +12,17 @@ mkdir -p "$BUILD" "$OUTPUT"
 cd "$BUILD"
 sudo lb clean --purge 2>/dev/null || true
 lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --initsystem systemd --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer false --apt-recommends false --security false --linux-packages none
+# Copy the Ubuntu live-build ISOLINUX theme with symlinks dereferenced on
+# the host. Debian Trixie does not carry the old /lib/syslinux target paths.
+test -f /usr/share/live/build/bootloaders/isolinux/isolinux.cfg
+mkdir -p config/bootloaders
+cp -aL /usr/share/live/build/bootloaders/isolinux config/bootloaders/
+for file in isolinux.bin vesamenu.c32; do
+  test -s "config/bootloaders/isolinux/$file" || {
+    echo "Missing ISOLINUX boot file: $file" >&2
+    exit 1
+  }
+done
 mkdir -p config/package-lists config/hooks/live config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/xsessions config/includes.chroot/usr/local/bin config/includes.chroot/opt/kufgem-infoscreen config/includes.chroot/etc/systemd/system config/includes.chroot/var/lib/kufgem-infoscreen
 cat >config/package-lists/infoscreen.list.chroot <<'EOF'
 live-boot
