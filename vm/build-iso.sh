@@ -19,6 +19,8 @@ live-config
 systemd-sysv
 linux-image-amd64
 lightdm
+lightdm-gtk-greeter
+dbus-x11
 xserver-xorg-core
 xserver-xorg-video-fbdev
 xserver-xorg-input-libinput
@@ -34,8 +36,8 @@ cp "$OUTPUT"/kufgem-infoscreen_*_amd64.deb config/packages.chroot/
 cat >config/includes.chroot/etc/lightdm/lightdm.conf.d/99-infoscreen.conf <<'EOF'
 [Seat:*]
 autologin-user=user
-autologin-user-timeout=0
 user-session=infoscreen
+autologin-user-timeout=0
 EOF
 cat >config/includes.chroot/usr/share/xsessions/infoscreen.desktop <<'EOF'
 [Desktop Entry]
