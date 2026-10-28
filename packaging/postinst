@@ -5,7 +5,7 @@ if ! getent passwd infoscreen >/dev/null; then
 fi
 mkdir -p /var/lib/kufgem-infoscreen /etc/kufgem-infoscreen
 chown infoscreen:infoscreen /var/lib/kufgem-infoscreen
-chmod 0750 /var/lib/kufgem-infoscreen
+chmod 0755 /var/lib/kufgem-infoscreen
 if [ ! -s /etc/kufgem-infoscreen/admin-token ]; then
  umask 077
  head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/kufgem-infoscreen/admin-token
