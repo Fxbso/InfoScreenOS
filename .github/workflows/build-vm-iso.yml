@@ -1,0 +1,25 @@
+name: Build VirtualBox Live ISO
+on:
+  workflow_dispatch:
+jobs:
+  iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Debian live-build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y live-build dpkg-dev
+      - name: Test API
+        run: python3 -m unittest discover -s tests
+      - name: Build VirtualBox ISO
+        run: bash vm/build-iso.sh
+      - name: Upload ISO build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KUFGEM-InfoScreenOS-VM-amd64
+          path: |
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso
+            dist/KUFGEM-InfoScreenOS-VM-amd64.iso.sha256
+          retention-days: 7
