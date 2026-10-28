@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+ if [ -d /run/systemd/system ]; then
+  systemctl disable --now kufgem-infoscreen-api.service kufgem-infoscreen-display.service >/dev/null 2>&1 || true
+ fi
+fi
+if [ "$1" = "purge" ]; then
+ rm -rf /etc/kufgem-infoscreen /var/lib/kufgem-infoscreen
+fi
+exit 0
