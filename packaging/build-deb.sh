@@ -25,4 +25,4 @@ cp packaging/postinst "$TMP/DEBIAN/postinst"
 cp packaging/postrm "$TMP/DEBIAN/postrm"
 chmod 0755 "$TMP/DEBIAN/"*
 dpkg-deb --root-owner-group --build "$TMP" "$OUT/kufgem-infoscreen_${VERSION}_${ARCH}.deb"
-echo "Built $OUT/kufgem-infoscreen_${VERSION}_arm64.deb"
+echo "Built $OUT/kufgem-infoscreen_${VERSION}_${ARCH}.deb"
