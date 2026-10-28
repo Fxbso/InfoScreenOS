@@ -1,49 +1,39 @@
 # KUFGEM InfoScreen OS
 
-Native, browser-free information display for Raspberry Pi 3B+, with a separate web management dashboard.
+Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium or a desktop session. Includes a web management dashboard, a native fullscreen SDL2-based display, Debian packaging and an experimental custom image build recipe.
 
-> **Status:** Foundation / planning. No installable OS image or APT package has been released yet.
+**Status: 0.1.0-alpha source implementation; not yet field tested on hardware. No downloadable OS image or APT feed is published yet.**
 
-## Goals
-- Raspberry Pi 3 Model B+ (1 GB RAM), Raspberry Pi OS Lite 64-bit base.
-- Native fullscreen HDMI rendering without Chromium or a desktop.
-- Responsive web dashboard accessed from another computer.
-- Adjustable background images, colors, fonts, widget positions and sizes.
-- Widgets for clock, weather, Austrian train departures, traffic and company announcements.
-- Extensible widget architecture and resilient live-data caching.
-- Reproducible OS image builds; signed ARM64 Debian packages and embedded APT source.
-- Boot-time autostart and crash recovery with systemd.
-- No personal user data or backup system. Display configuration is stored locally and can be reset on replacement hardware.
+## Included
+- Native Python/Pygame display using SDL2, designed for KMS/DRM.
+- Responsive browser dashboard used on a separate PC: drag widgets, edit colors, messages and positions.
+- Lightweight Python standard-library API; no database or Chromium required.
+- Local JSON layout, periodically reread by display.
+- Clock/date and text display. Weather, rail and traffic are placeholders for future API connectors.
+- Per-device administrator token protecting config changes (trusted LAN only until TLS is implemented).
+- systemd services to start display and API at boot, with crash restart.
+- ARM64 Debian package script, GitHub Actions package CI.
+- Initial image-build script based on official Raspberry Pi rpi-image-gen.
 
-## Planned repository structure
-
-```text
-display/            Native renderer; SDL2/DRM-KMS proof of concept first
-backend/            API, config, caching and data connectors
-dashboard/          Browser-based editor (production build served by backend)
-widgets/            Widget implementations / interfaces
-packaging/          Debian packaging and systemd units
-image/              Custom Raspberry Pi OS image recipes
-.github/workflows/  CI and release automation
-tests/              Automated tests
-```
-
-## v0.1.0-alpha acceptance criteria
-1. Validate direct HDMI output via DRM/KMS on the actual Raspberry Pi 3B+.
-2. Boot into fullscreen clock display with a configurable image background.
-3. Edit and apply the layout from another computer via the local web dashboard.
-4. Start automatically on boot; restart after a crash.
-5. Build an installable `kufgem-infoscreen` ARM64 Debian package.
-6. Build a flashable `.img.xz` with InfoScreen and its APT repository preconfigured.
-7. Test the full install/boot/update cycle on real hardware.
-
-## Installation (future release)
-
-Flash a published InfoScreen OS image using Raspberry Pi Imager, then boot the Pi. The software should start automatically. Future versions will update through:
-
+## Quick start for developers
 ```bash
-sudo apt update
-sudo apt upgrade
+python3 -m unittest discover -s tests
+INFOSCREEN_DATA_DIR=/tmp/infoscreen-dev INFOSCREEN_TOKEN_FILE=/tmp/infoscreen-token python3 backend/app.py
+```
+For development, create `/tmp/infoscreen-token` containing a random token and restrict permissions before running the server. Visit `http://127.0.0.1:8080` on the same machine.
+
+## Build / install
+See [docs/INSTALL.md](docs/INSTALL.md). On a suitable ARM64 builder:
+```bash
+bash packaging/build-deb.sh
+```
+For an experimental image build:
+```bash
+SSH_PUBLIC_KEY="$HOME/.ssh/id_ed25519.pub" bash image/build-image.sh
 ```
 
-There is **no installable release yet**. Do not attempt `apt install kufgem-infoscreen` until the package and signed repository have been published.
+## Target deployment
+Flash a **tested** InfoScreen OS image to SD, power on, HDMI display launches automatically, configure the layout from a PC. A future signed APT repository will be embedded for normal `apt upgrade` updates.
+
+## Security and data
+No personal user data, no backup subsystem. The Pi stores only local layout settings and its administration token. The dashboard must remain on a trusted internal network until HTTPS/reverse proxy support is in place.
