@@ -29,6 +29,7 @@ if ! id infoscreen-kiosk >/dev/null 2>&1; then
 fi
 install -d -m 0755 /opt/kufgem-infoscreen /var/lib/kufgem-infoscreen
 install -d -m 0750 /etc/kufgem-infoscreen
+chown root:infoscreen /etc/kufgem-infoscreen
 chown infoscreen:infoscreen /var/lib/kufgem-infoscreen
 for dir in backend display dashboard; do
  rm -rf "/opt/kufgem-infoscreen/$dir"
