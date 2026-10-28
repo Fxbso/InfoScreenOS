@@ -1,0 +1,18 @@
+[Unit]
+Description=KUFGEM InfoScreen management API
+After=network.target
+[Service]
+Type=simple
+User=infoscreen
+Group=infoscreen
+Environment=INFOSCREEN_HOST=0.0.0.0
+Environment=INFOSCREEN_DATA_DIR=/var/lib/kufgem-infoscreen
+ExecStart=/usr/bin/python3 /opt/kufgem-infoscreen/backend/app.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/kufgem-infoscreen
+[Install]
+WantedBy=multi-user.target
