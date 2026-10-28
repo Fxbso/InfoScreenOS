@@ -22,6 +22,10 @@ INFOSCREEN_DATA_DIR=/tmp/infoscreen-dev INFOSCREEN_TOKEN_FILE=/tmp/infoscreen-to
 ```
 For development, create `/tmp/infoscreen-token` containing a random token and restrict permissions before running the server. Visit `http://127.0.0.1:8080` on the same machine.
 
+## VirtualBox VM ISO (experimental)
+
+A separate Debian Live ISO build for VirtualBox is now included. It uses the same InfoScreen app but an X11 SDL2 video backend inside the VM (no browser). See [vm/README.md](vm/README.md). The GitHub Actions workflow **Build VirtualBox Live ISO** can build and upload the ISO as a workflow artifact when manually triggered. The workflow has not yet been verified to complete successfully.
+
 ## Build / install
 See [docs/INSTALL.md](docs/INSTALL.md). On a suitable ARM64 builder:
 ```bash
