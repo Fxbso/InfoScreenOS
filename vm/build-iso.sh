@@ -12,17 +12,24 @@ mkdir -p "$BUILD" "$OUTPUT"
 cd "$BUILD"
 sudo lb clean --purge 2>/dev/null || true
 lb config --mode debian --distribution trixie --architectures amd64 --binary-images iso-hybrid --system live --initsystem systemd --archive-areas "main non-free-firmware" --mirror-bootstrap https://deb.debian.org/debian/ --mirror-chroot https://deb.debian.org/debian/ --mirror-binary https://deb.debian.org/debian/ --debian-installer false --apt-recommends false --security false --linux-packages none
-# Copy the Ubuntu live-build ISOLINUX theme with symlinks dereferenced on
-# the host. Debian Trixie does not carry the old /lib/syslinux target paths.
-test -f /usr/share/live/build/bootloaders/isolinux/isolinux.cfg
-mkdir -p config/bootloaders
-cp -aL /usr/share/live/build/bootloaders/isolinux config/bootloaders/
-for file in isolinux.bin vesamenu.c32; do
-  test -s "config/bootloaders/isolinux/$file" || {
-    echo "Missing ISOLINUX boot file: $file" >&2
-    exit 1
-  }
+# Ship real BIOS Syslinux files, not live-build's absolute symlinks.
+# The Ubuntu theme can contain dangling symlinks even with isolinux installed.
+mkdir -p config/bootloaders/isolinux
+cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
+ISOLINUX_BIN="$(dpkg -L isolinux | grep -E '/isolinux[.]bin$' | head -1)"
+BIOS_MODULES="/usr/lib/syslinux/modules/bios"
+test -n "$ISOLINUX_BIN" && test -s "$ISOLINUX_BIN" || {
+  echo "FATAL: isolinux.bin missing from installed isolinux package" >&2; exit 1;
+}
+test -s "$BIOS_MODULES/vesamenu.c32" || {
+  echo "FATAL: Syslinux BIOS modules missing" >&2; exit 1;
+}
+cp -L "$ISOLINUX_BIN" config/bootloaders/isolinux/isolinux.bin
+for module in "$BIOS_MODULES"/*.c32; do
+  cp -L "$module" config/bootloaders/isolinux/
 done
+test -s config/bootloaders/isolinux/isolinux.bin
+test -s config/bootloaders/isolinux/vesamenu.c32
 mkdir -p config/package-lists config/hooks/live config/includes.chroot/etc/lightdm/lightdm.conf.d config/includes.chroot/usr/share/xsessions config/includes.chroot/usr/local/bin config/includes.chroot/opt/kufgem-infoscreen config/includes.chroot/etc/systemd/system config/includes.chroot/var/lib/kufgem-infoscreen
 cat >config/package-lists/infoscreen.list.chroot <<'EOF'
 live-boot
