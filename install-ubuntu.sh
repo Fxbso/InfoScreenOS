@@ -11,7 +11,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "==> Ubuntu-Pakete installieren"
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter accountsservice xserver-xorg xserver-xorg-video-fbdev xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core
+apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter accountsservice xserver-xorg xserver-xorg-video-fbdev xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core fonts-lato fonts-liberation2
 echo "==> InfoScreen herunterladen"
 curl -fL --retry 3 --connect-timeout 15 "$REPO" -o "$TMP/source.tar.gz"
 mkdir -p "$TMP/src"
