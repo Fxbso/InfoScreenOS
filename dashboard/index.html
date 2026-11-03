@@ -29,6 +29,7 @@
 .widget-context-menu button:hover{background:#29425e}
 .widget-context-menu button.danger{color:#ff9ca6}
 .widget-context-menu button.danger:hover{background:#552d3d}
+.screen-title-switch{display:flex;align-items:center;gap:9px;color:#a9bed5;font-size:12px;line-height:1.4;cursor:pointer;margin-top:12px}.screen-title-switch input{accent-color:#69aeed;width:16px;height:16px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -58,7 +59,7 @@
   </section>
   <aside id="designPanel" class="panel">
    <div class="section-title"><div><h2>Design & Layout</h2><p>Bildschirm und Widgets</p></div></div>
-   <label for="title">Titel</label><input id="title"><label for="fontFamily">Schriftart der Live-Anzeige</label><select id="fontFamily"><option value="lato">Lato · Modern & klar</option><option value="liberation">Liberation Sans · Neutral</option><option value="dejavu">DejaVu Sans · Klassisch</option></select><p class="small">Gilt für alle Texte auf dem InfoScreen.</p>
+   <label for="title">Titel</label><input id="title"><label class="screen-title-switch"><input id="showScreenTitle" type="checkbox"> Titel zusätzlich auf dem Bildschirm anzeigen</label><label for="fontFamily">Schriftart der Live-Anzeige</label><select id="fontFamily"><option value="lato">Lato · Modern & klar</option><option value="liberation">Liberation Sans · Neutral</option><option value="dejavu">DejaVu Sans · Klassisch</option></select><p class="small">Gilt für alle Texte auf dem InfoScreen.</p>
    <label for="background">Hintergrundfarbe</label><input id="background" type="color">
    <label for="overlayOpacity">Editor · Hintergrundabdunklung</label><input id="overlayOpacity" type="range" min="0" max="100" value="12">
    <label for="widgetOpacity">Editor · Hilfsflächen-Deckkraft</label><input id="widgetOpacity" type="range" min="0" max="100" value="78">
