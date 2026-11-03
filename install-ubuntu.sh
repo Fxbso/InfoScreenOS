@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# KUFGEM InfoScreen: Ubuntu Server 24.04/26.04, x86_64 or arm64, local HDMI kiosk.
+# KUFGEM InfoScreen: Ubuntu Server 22.04/24.04/26.04, x86_64 or arm64, local HDMI kiosk.
 set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
 if [[ ${EUID} -ne 0 ]]; then echo "Bitte mit sudo ausführen." >&2; exit 1; fi
@@ -88,7 +88,8 @@ if [[ -f /var/lib/kufgem-infoscreen/background.img ]]; then chmod 0644 /var/lib/
 echo "==> Dienste starten"
 systemctl daemon-reload
 systemctl reset-failed kufgem-infoscreen-api.service lightdm.service || true
-systemctl enable --now kufgem-infoscreen-api.service
+systemctl enable kufgem-infoscreen-api.service
+systemctl restart kufgem-infoscreen-api.service
 systemctl set-default graphical.target
 systemctl enable lightdm.service
 systemctl restart lightdm.service
