@@ -40,8 +40,12 @@ def color(value, default="#ffffff"):
         return pygame.Color(default)
 
 
+FONT_NAMES = {"lato": "lato", "liberation": "liberation sans", "dejavu": "dejavu sans"}
+
 def font(size, bold=False):
-    return pygame.font.SysFont("dejavusans", max(13, int(size)), bold=bold)
+    family = layout.get("fontFamily", "lato")
+    name = FONT_NAMES.get(family, "lato")
+    return pygame.font.SysFont(name, max(13, int(size)), bold=bold)
 
 
 def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
@@ -77,8 +81,8 @@ def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
         px, py = int(x), int(y + index * size * 1.3)
         if shadow:
             shadow_surface = face.render(line, True, (0, 0, 0))
-            shadow_surface.set_alpha(165)
-            screen.blit(shadow_surface, (px + 2, py + 2))
+            shadow_surface.set_alpha(100)
+            screen.blit(shadow_surface, (px + 1, py + 2))
         screen.blit(surface, (px, py))
 
 
@@ -142,8 +146,8 @@ def redraw():
     # widgetOpacity, panelOpacity and radius. No dark boxes on the live display.
     title = layout.get("title", "KUFGEM InfoScreen")
     if title:
-        draw_text(title, width * .035, height * .025, height * .026,
-                  "#eef7ff", width * .9, bold=True)
+        draw_text(title, width * .035, height * .025, height * .022,
+                  "#eef7ff", width * .9)
 
     for widget in layout.get("widgets", []):
         try:
@@ -162,8 +166,8 @@ def redraw():
             padding = max(4, height * .008)
             if kind in ("message", "divider"):
                 draw_text(value, x + padding, y + padding,
-                          min(height * .052 * scale, available_height * .42),
-                          ink, available_width - padding * 2, bold=(kind == "message"))
+                          min(height * .043 * scale, available_height * .38),
+                          ink, available_width - padding * 2)
                 continue
             small_label = widget.get("title") or TITLES.get(kind, kind.upper())
             draw_text(small_label, x + padding, y + padding,
@@ -171,7 +175,7 @@ def redraw():
                       "#e0eaf4", available_width - padding * 2)
             draw_text(value, x + padding, y + padding + height * .033,
                       min(height * .045 * scale, available_height * .37),
-                      ink, available_width - padding * 2, bold=(kind == "clock"))
+                      ink, available_width - padding * 2)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
 
