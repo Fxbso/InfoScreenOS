@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Local dashboard API. Stdlib-only, no cloud dependencies."""
-import copy, json, os, pathlib, secrets, tempfile, threading, hashlib, hmac, time, socket, shutil, platform, subprocess
+import copy, json, os, pathlib, secrets, tempfile, threading, hashlib, hmac, time, socket, shutil, platform, subprocess, urllib.request, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -32,6 +32,13 @@ def validate(v):
   if w["w"]<1 or w["h"]<1: raise ValueError("Invalid size")
   for k in ("color","text","location","title"):
    if k in w and (not isinstance(w[k],str) or len(w[k])>300): raise ValueError("Invalid "+k)
+  if "source" in w:
+   src=w["source"]
+   if not isinstance(src,dict) or src.get("provider") not in ("open-meteo","manual","none"):raise ValueError("Invalid data source")
+   if src["provider"]=="open-meteo" and w["type"]!="weather":raise ValueError("Unsupported data provider")
+   for field in ("location","text"):
+    if field in src and (not isinstance(src[field],str) or len(src[field])>160):raise ValueError("Invalid source field")
+   if "interval" in src and (isinstance(src["interval"],bool) or not isinstance(src["interval"],(float,int)) or not 5<=src["interval"]<=120):raise ValueError("Invalid interval")
   for k in ("panelOpacity","fontScale","radius"):
    if k in w and (isinstance(w[k],bool) or not isinstance(w[k],(float,int)) or not 0<=w[k]<=100): raise ValueError("Invalid "+k)
  for k in ("overlayOpacity","widgetOpacity"):
@@ -53,6 +60,53 @@ def save(v):
    os.replace(tmp,DATA/"layout.json")
   finally:
    if os.path.exists(tmp): os.unlink(tmp)
+WIDGET_CACHE={}
+WIDGET_CACHE_LOCK=threading.Lock()
+def fetch_json(url):
+ req=urllib.request.Request(url,headers={"User-Agent":"KUFGEM-InfoScreen/0.2"})
+ with urllib.request.urlopen(req,timeout=5) as response:
+  return json.load(response)
+def weather_text(location):
+ location=location.strip()[:100]
+ if len(location)<2: raise ValueError("Bitte einen Ort angeben")
+ geo=fetch_json("https://geocoding-api.open-meteo.com/v1/search?"+urllib.parse.urlencode({"name":location,"count":1,"language":"de"}))
+ places=geo.get("results") or []
+ if not places:raise ValueError("Ort wurde nicht gefunden")
+ place=places[0]
+ forecast=fetch_json("https://api.open-meteo.com/v1/forecast?"+urllib.parse.urlencode({
+   "latitude":place["latitude"],"longitude":place["longitude"],
+   "current":"temperature_2m,weather_code,wind_speed_10m","timezone":"auto"}))
+ current=forecast["current"]
+ code=int(current.get("weather_code",-1))
+ condition=("Klar" if code==0 else "Wolkig" if code<=3 else "Nebel" if code<=48 else
+            "Niederschlag" if code<=67 else "Schnee" if code<=86 else "Gewitter" if code>=95 else "Wechselhaft")
+ return f'{place["name"]}: {round(current["temperature_2m"])} °C · {condition} · Wind {round(current["wind_speed_10m"])} km/h'
+def widget_data():
+ result={}
+ for widget in load()["widgets"]:
+  if widget["type"] not in ("weather","traffic","departures"):continue
+  source=widget.get("source",{})
+  provider=source.get("provider","none")
+  if provider=="manual":
+   result[widget["id"]]={"ok":True,"text":source.get("text","")}
+   continue
+  if provider!="open-meteo" or widget["type"]!="weather":continue
+  location=source.get("location","Kufstein")
+  interval=max(5,min(120,source.get("interval",15)))
+  cache_key=("open-meteo",location)
+  now=time.monotonic()
+  with WIDGET_CACHE_LOCK:
+   cached=WIDGET_CACHE.get(cache_key)
+  if cached and now-cached[0]<interval*60:
+   result[widget["id"]]=cached[1]
+   continue
+  try: data={"ok":True,"text":weather_text(location)}
+  except (OSError,ValueError,KeyError,TimeoutError,urllib.error.URLError):
+   data={"ok":False,"text":"Wetter aktuell nicht verfügbar"}
+  with WIDGET_CACHE_LOCK:WIDGET_CACHE[cache_key]=(now,data)
+  result[widget["id"]]=data
+ return {"widgets":result}
+
 def system_snapshot():
  """Read-only operational data; never expose secrets or network configuration files."""
  uptime=0
@@ -172,6 +226,9 @@ class Handler(BaseHTTPRequestHandler):
    self.send_header("Content-Length",str(len(b)))
    self.end_headers();self.wfile.write(b);return
   if path=="/api/health": return self.send_json(200,{"ok":True})
+  if path=="/api/widget-data":
+   if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
+   return self.send_json(200,widget_data())
   if path=="/api/system":
    if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
    return self.send_json(200,system_snapshot())
