@@ -95,8 +95,8 @@ $("logout").onclick=async()=>{
 };
 (async()=>{
  try{const r=await fetch("/api/session",{cache:"no-store"});if(r.ok){await loadConfig();return}
- $("status").textContent="Anmeldung erforderlich";
- }catch(e){$("status").textContent="API nicht erreichbar"}
+ $("status").textContent="Anmeldung erforderlich";$("loginPanel").hidden=false;
+ }catch(e){$("status").textContent="API nicht erreichbar";$("loginPanel").hidden=false}
 })();
 for(const [id,name] of [["tabMain","main"],["tabExplorer","explorer"],["tabSettings","settings"]])$(id).onclick=()=>switchTab(name);
 $("widgetSearch").addEventListener("input",renderExplorer);
