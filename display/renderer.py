@@ -40,12 +40,36 @@ def color(value, default="#ffffff"):
         return pygame.Color(default)
 
 
-FONT_NAMES = {"lato": "lato", "liberation": "liberation sans", "dejavu": "dejavu sans"}
+# Explicit regular files avoid pygame SysFont selecting Lato Hairline/Thin
+# when the family contains multiple installed weights.
+FONT_FILES = {
+    "lato": (
+        "/usr/share/fonts/truetype/lato/Lato-Regular.ttf",
+        "/usr/share/fonts/truetype/lato/Lato-Semibold.ttf",
+    ),
+    "liberation": (
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+    ),
+    "dejavu": (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ),
+}
+FONT_CACHE = {}
 
 def font(size, bold=False):
     family = layout.get("fontFamily", "lato")
-    name = FONT_NAMES.get(family, "lato")
-    return pygame.font.SysFont(name, max(13, int(size)), bold=bold)
+    regular, heavier = FONT_FILES.get(family, FONT_FILES["lato"])
+    path = heavier if bold else regular
+    if not pathlib.Path(path).is_file():
+        path = regular
+    if not pathlib.Path(path).is_file():
+        path = pygame.font.match_font("dejavusans") or None
+    key = (path, max(13, int(size)))
+    if key not in FONT_CACHE:
+        FONT_CACHE[key] = pygame.font.Font(path, key[1])
+    return FONT_CACHE[key]
 
 
 def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
@@ -80,9 +104,12 @@ def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
         surface = face.render(line, True, color(ink))
         px, py = int(x), int(y + index * size * 1.3)
         if shadow:
-            shadow_surface = face.render(line, True, (0, 0, 0))
-            shadow_surface.set_alpha(100)
-            screen.blit(shadow_surface, (px + 1, py + 2))
+            # Subtle four-sided dark edge makes white typography legible on
+            # bright photos, without putting dark panels behind widgets.
+            outline = face.render(line, True, (5, 12, 22))
+            outline.set_alpha(205)
+            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (1, 2)):
+                screen.blit(outline, (px + dx, py + dy))
         screen.blit(surface, (px, py))
 
 
@@ -147,7 +174,7 @@ def redraw():
     title = layout.get("title", "KUFGEM InfoScreen")
     if title:
         draw_text(title, width * .035, height * .025, height * .022,
-                  "#eef7ff", width * .9)
+                  "#ffffff", width * .9, bold=True)
 
     for widget in layout.get("widgets", []):
         try:
@@ -167,15 +194,15 @@ def redraw():
             if kind in ("message", "divider"):
                 draw_text(value, x + padding, y + padding,
                           min(height * .043 * scale, available_height * .38),
-                          ink, available_width - padding * 2)
+                          ink, available_width - padding * 2, bold=(kind == "message"))
                 continue
             small_label = widget.get("title") or TITLES.get(kind, kind.upper())
             draw_text(small_label, x + padding, y + padding,
                       min(height * .017, available_height * .17),
-                      "#e0eaf4", available_width - padding * 2)
+                      "#ffffff", available_width - padding * 2, bold=True)
             draw_text(value, x + padding, y + padding + height * .033,
                       min(height * .045 * scale, available_height * .37),
-                      ink, available_width - padding * 2)
+                      ink, available_width - padding * 2, bold=(kind == "clock"))
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
 
