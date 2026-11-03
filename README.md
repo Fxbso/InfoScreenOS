@@ -42,6 +42,22 @@ Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium 
 - ARM64 Debian package script, GitHub Actions package CI.
 - Initial image-build script based on official Raspberry Pi rpi-image-gen.
 
+## Web-Konfiguration (aktuelle Entwicklung)
+- **Hauptansicht**: Bildschirm-Vorschau, Positionen per Drag-and-drop, Widget-Editor,
+  Bildabdunklung sowie separat einstellbare Karten-Deckkraft, Farben und Schriftgröße.
+- **Widget-Explorer**: Vorschaukarten, Einrichtungsdialog mit Datenquelle, anschließend
+  Widget hinzufügen und Layout speichern.
+- **Einstellungen (Zahnrad)**: authentifizierter, lesender Systemstatus (IP-Adressen,
+  Adapter, Speicher, RAM, Laufzeit) und kopierbarer Update-Befehl. Aktive
+  Netzwerk-Konfiguration und automatische Systemupdates sind noch nicht implementiert.
+- Widgets: Uhr, Datum, Mitteilung, Wetter, Zugabfahrten, Verkehr, Hostname, Laufzeit,
+  Systemstatus und Trennlinie. **Echte Live-Daten derzeit nur für Open-Meteo-Wetter**;
+  Bahn/Verkehr bieten momentan manuelle Quellen, keine angeblichen Live-Daten.
+- Externe Wetteranbieter benötigen Internet und dürfen nur gemäß deren Nutzungs- und
+  Lizenzbedingungen verwendet werden (insbesondere bei betrieblichem Einsatz).
+- Änderung übernehmen: `curl -fsSL https://raw.githubusercontent.com/Fxbso/InfoScreenOS/main/install-ubuntu.sh -o /tmp/infoscreen-install.sh && sudo bash /tmp/infoscreen-install.sh`.
+  Beim Update bleiben Layout und Passwort erhalten.
+
 ## Quick start for developers
 ```bash
 python3 -m unittest discover -s tests
