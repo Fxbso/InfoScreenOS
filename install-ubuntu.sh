@@ -6,7 +6,9 @@ if [[ ${EUID} -ne 0 ]]; then echo "Bitte mit sudo ausführen." >&2; exit 1; fi
 . /etc/os-release
 if [[ "${ID:-}" != ubuntu ]]; then echo "Nur Ubuntu Server wird unterstützt." >&2; exit 1; fi
 case "$(dpkg --print-architecture)" in amd64|arm64) ;; *) echo "Nur amd64/arm64 unterstützt" >&2; exit 1;; esac
-REPO="https://github.com/Fxbso/InfoScreenOS/archive/refs/heads/main.tar.gz"
+REVISION="$(curl -fsSL --retry 3 --connect-timeout 15 -H 'Accept: application/vnd.github+json' https://api.github.com/repos/Fxbso/InfoScreenOS/commits/main | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha"])')"
+if [[ ! "$REVISION" =~ ^[0-9a-f]{40}$ ]]; then echo "Invalid GitHub revision" >&2; exit 1; fi
+REPO="https://api.github.com/repos/Fxbso/InfoScreenOS/tarball/$REVISION"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "==> Ubuntu-Pakete installieren"
@@ -16,7 +18,7 @@ echo "==> InfoScreen herunterladen"
 curl -fL --retry 3 --connect-timeout 15 "$REPO" -o "$TMP/source.tar.gz"
 mkdir -p "$TMP/src"
 tar -xzf "$TMP/source.tar.gz" -C "$TMP/src" --strip-components=1
-for path in backend/app.py backend/set_password.py display/renderer.py dashboard/index.html dashboard/app.js packaging/kufgem-infoscreen-api.service; do
+for path in backend/app.py backend/set_password.py display/renderer.py dashboard/index.html dashboard/app.js packaging/kufgem-infoscreen-api.service update-ubuntu.py; do
  test -s "$TMP/src/$path" || { echo "Fehlt im Download: $path" >&2; exit 1; }
 done
 python3 -m compileall -q "$TMP/src/backend" "$TMP/src/display"
@@ -37,6 +39,36 @@ for dir in backend display dashboard; do
 done
 chown -R root:root /opt/kufgem-infoscreen
 chmod -R a+rX /opt/kufgem-infoscreen
+echo "==> GitHub-Autoupdater einrichten (ohne Actions)"
+install -m 0755 "$TMP/src/update-ubuntu.py" /usr/local/sbin/kufgem-infoscreen-update
+printf '%s\n' "$REVISION" > /var/lib/kufgem-infoscreen/installed-commit
+chmod 0644 /var/lib/kufgem-infoscreen/installed-commit
+cat > /etc/systemd/system/kufgem-infoscreen-update.service <<'EOF'
+[Unit]
+Description=KUFGEM InfoScreen automatic GitHub update
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/usr/local/sbin/kufgem-infoscreen-update
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/kufgem-infoscreen-update.lock /usr/bin/python3 /usr/local/sbin/kufgem-infoscreen-update
+TimeoutStartSec=180
+EOF
+cat > /etc/systemd/system/kufgem-infoscreen-update.timer <<'EOF'
+[Unit]
+Description=Check KUFGEM InfoScreen GitHub main every 6 hours
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=6h
+RandomizedDelaySec=30min
+Persistent=true
+Unit=kufgem-infoscreen-update.service
+
+[Install]
+WantedBy=timers.target
+EOF
 if [[ ! -s /etc/kufgem-infoscreen/password.json ]]; then
   echo "==> Erstes Dashboard-Passwort erstellen"
   /usr/bin/python3 /opt/kufgem-infoscreen/backend/set_password.py --generate
@@ -87,6 +119,7 @@ if [[ -f /var/lib/kufgem-infoscreen/layout.json ]]; then chmod 0644 /var/lib/kuf
 if [[ -f /var/lib/kufgem-infoscreen/background.img ]]; then chmod 0644 /var/lib/kufgem-infoscreen/background.img; fi
 echo "==> Dienste starten"
 systemctl daemon-reload
+systemctl enable --now kufgem-infoscreen-update.timer
 systemctl reset-failed kufgem-infoscreen-api.service lightdm.service || true
 systemctl enable kufgem-infoscreen-api.service
 systemctl restart kufgem-infoscreen-api.service
@@ -98,5 +131,8 @@ echo "KUFGEM InfoScreen installiert."
 echo "Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
 echo "Eigenes Dashboard-Passwort setzen:"
 echo "sudo python3 /opt/kufgem-infoscreen/backend/set_password.py"
+echo "Autoupdate: GitHub main, Prüfung ca. alle 6 Stunden, ohne Actions"
+echo "Update-Status: systemctl list-timers kufgem-infoscreen-update.timer"
+echo "Manuelle Prüfung: sudo python3 /usr/local/sbin/kufgem-infoscreen-update --check"
 echo "Bei Bedarf neu starten: sudo reboot"
 echo "Info: Die Weboberfläche ist nur für vertrauenswürdige LANs gedacht (noch kein HTTPS)."
