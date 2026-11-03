@@ -104,12 +104,10 @@ def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
         surface = face.render(line, True, color(ink))
         px, py = int(x), int(y + index * size * 1.3)
         if shadow:
-            # Subtle four-sided dark edge makes white typography legible on
-            # bright photos, without putting dark panels behind widgets.
-            outline = face.render(line, True, (5, 12, 22))
-            outline.set_alpha(205)
-            for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (1, 2)):
-                screen.blit(outline, (px + dx, py + dy))
+            # Single soft drop shadow, never an outlined/WordArt look.
+            shadow_surface = face.render(line, True, (12, 20, 32))
+            shadow_surface.set_alpha(130)
+            screen.blit(shadow_surface, (px + 1, py + 2))
         screen.blit(surface, (px, py))
 
 
@@ -171,10 +169,12 @@ def redraw():
 
     # The real InfoScreen deliberately ignores editor-only overlayOpacity,
     # widgetOpacity, panelOpacity and radius. No dark boxes on the live display.
+    # The layout title is metadata in the editor, not a second overlay on
+    # top of a clock. A screen heading is opt-in for layouts that need one.
     title = layout.get("title", "KUFGEM InfoScreen")
-    if title:
-        draw_text(title, width * .035, height * .025, height * .022,
-                  "#ffffff", width * .9, bold=True)
+    if layout.get("showScreenTitle", False) and title:
+        draw_text(title, width * .035, height * .026, height * .020,
+                  "#ffffff", width * .9)
 
     for widget in layout.get("widgets", []):
         try:
@@ -192,17 +192,21 @@ def redraw():
             scale = max(.6, min(1.6, widget.get("fontScale", 50) / 50))
             padding = max(4, height * .008)
             if kind in ("message", "divider"):
+                # Keep information panels visually quiet, without giant bold
+                # headings sitting on top of the background photo.
+                base = .035 if kind == "message" else .022
                 draw_text(value, x + padding, y + padding,
-                          min(height * .043 * scale, available_height * .38),
-                          ink, available_width - padding * 2, bold=(kind == "message"))
+                          min(height * base * scale, available_height * .32),
+                          ink, available_width - padding * 2, bold=False)
                 continue
             small_label = widget.get("title") or TITLES.get(kind, kind.upper())
             draw_text(small_label, x + padding, y + padding,
-                      min(height * .017, available_height * .17),
-                      "#ffffff", available_width - padding * 2, bold=True)
-            draw_text(value, x + padding, y + padding + height * .033,
-                      min(height * .045 * scale, available_height * .37),
-                      ink, available_width - padding * 2, bold=(kind == "clock"))
+                      min(height * .016, available_height * .14),
+                      "#ffffff", available_width - padding * 2, bold=False)
+            base = .045 if kind == "clock" else .033 if kind == "date" else .030
+            draw_text(value, x + padding, y + padding + height * .031,
+                      min(height * base * scale, available_height * .32),
+                      ink, available_width - padding * 2, bold=False)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
 
