@@ -2,7 +2,7 @@
 
 ## Ubuntu Server – Installation mit einem Befehl
 
-Auf einem frisch installierten Ubuntu Server 24.04 LTS oder 26.04 (amd64/arm64)
+Auf einem frisch installierten Ubuntu Server 22.04, 24.04 LTS oder 26.04 (amd64/arm64)
 mit Internetzugang, angeschlossenem Bildschirm und sudo-Rechten:
 
 ```bash
@@ -12,8 +12,13 @@ curl -fsSL https://raw.githubusercontent.com/Fxbso/InfoScreenOS/main/install-ubu
 Das Skript installiert X11/LightDM, Python/Pygame, Dashboard und API, richtet
 den automatischen Kiosk-Login ein und startet die Dienste. Danach ist das Dashboard
 im vertrauenswürdigen LAN unter `http://SERVER-IP:8080` erreichbar.
-Den beim Setup ausgegebenen Admin-Token später mit
-`sudo cat /etc/kufgem-infoscreen/admin-token` anzeigen. Optional `sudo reboot`.
+Bei Erstinstallation wird ein einmaliges Startpasswort angezeigt. Danach ein eigenes Passwort wählen:
+
+```bash
+sudo python3 /opt/kufgem-infoscreen/backend/set_password.py
+```
+
+Die Anmeldung bleibt im Browser bis zu sieben Tage bestehen; eine Passwortänderung beendet bisherige Sitzungen. Optional `sudo reboot`.
 
 **Sicherheit:** Den Installationscode vor Ausführung mit Root-Rechten ansehen;
 der Einzeiler lädt den aktuellen Stand des Branches `main`. Web-API nur in
@@ -32,7 +37,7 @@ Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium 
 - Lightweight Python standard-library API; no database or Chromium required.
 - Local JSON layout, periodically reread by display.
 - Clock/date and text display. Weather, rail and traffic are placeholders for future API connectors.
-- Per-device administrator token protecting config changes (trusted LAN only until TLS is implemented).
+- Password login (PBKDF2-HMAC-SHA256) and seven-day HttpOnly session cookie (trusted LAN only until TLS is implemented).
 - systemd services to start display and API at boot, with crash restart.
 - ARM64 Debian package script, GitHub Actions package CI.
 - Initial image-build script based on official Raspberry Pi rpi-image-gen.
@@ -62,4 +67,4 @@ SSH_PUBLIC_KEY="$HOME/.ssh/id_ed25519.pub" bash image/build-image.sh
 Flash a **tested** InfoScreen OS image to SD, power on, HDMI display launches automatically, configure the layout from a PC. A future signed APT repository will be embedded for normal `apt upgrade` updates.
 
 ## Security and data
-No personal user data, no backup subsystem. The Pi stores only local layout settings and its administration token. The dashboard must remain on a trusted internal network until HTTPS/reverse proxy support is in place.
+No personal user data, no backup subsystem. The Pi stores only local layout settings and its dashboard password hash. The dashboard must remain on a trusted internal network until HTTPS/reverse proxy support is in place.
