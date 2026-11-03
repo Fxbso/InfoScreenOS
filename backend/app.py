@@ -19,6 +19,7 @@ def validate(v):
  if not isinstance(v,dict): raise ValueError("Expected object")
  for k,n in [("title",120),("background",120)]:
   if not isinstance(v.get(k),str) or len(v[k])>n: raise ValueError("Invalid "+k)
+ if "fontFamily" in v and v["fontFamily"] not in ("lato","liberation","dejavu"): raise ValueError("Invalid font")
  ws=v.get("widgets")
  if not isinstance(ws,list) or len(ws)>32: raise ValueError("Invalid widgets")
  ids=set()
