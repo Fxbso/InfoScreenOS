@@ -16,7 +16,7 @@ echo "==> InfoScreen herunterladen"
 curl -fL --retry 3 --connect-timeout 15 "$REPO" -o "$TMP/source.tar.gz"
 mkdir -p "$TMP/src"
 tar -xzf "$TMP/source.tar.gz" -C "$TMP/src" --strip-components=1
-for path in backend/app.py display/renderer.py dashboard/index.html packaging/kufgem-infoscreen-api.service; do
+for path in backend/app.py backend/set_password.py display/renderer.py dashboard/index.html dashboard/app.js packaging/kufgem-infoscreen-api.service; do
  test -s "$TMP/src/$path" || { echo "Fehlt im Download: $path" >&2; exit 1; }
 done
 python3 -m compileall -q "$TMP/src/backend" "$TMP/src/display"
@@ -37,12 +37,12 @@ for dir in backend display dashboard; do
 done
 chown -R root:root /opt/kufgem-infoscreen
 chmod -R a+rX /opt/kufgem-infoscreen
-if [[ ! -s /etc/kufgem-infoscreen/admin-token ]]; then
- umask 077
- od -An -N32 -tx1 /dev/urandom | tr -d ' \n' > /etc/kufgem-infoscreen/admin-token
+if [[ ! -s /etc/kufgem-infoscreen/password.json ]]; then
+  echo "==> Erstes Dashboard-Passwort erstellen"
+  /usr/bin/python3 /opt/kufgem-infoscreen/backend/set_password.py --generate
+  echo "Dieses Startpasswort ist nur für die Erstanmeldung."
 fi
-chown root:infoscreen /etc/kufgem-infoscreen/admin-token
-chmod 0640 /etc/kufgem-infoscreen/admin-token
+rm -f /etc/kufgem-infoscreen/admin-token
 systemctl unmask kufgem-infoscreen-api.service 2>/dev/null || true
 install -m 0644 "$TMP/src/packaging/kufgem-infoscreen-api.service" /etc/systemd/system/kufgem-infoscreen-api.service
 # Ubuntu's display is an X11 kiosk, not the Pi-only KMS/DRM service.
@@ -95,7 +95,7 @@ systemctl restart lightdm.service
 echo
 echo "KUFGEM InfoScreen installiert."
 echo "Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
-echo "Admin-Token: $(cat /etc/kufgem-infoscreen/admin-token)"
-echo "Token auch später abrufbar: sudo cat /etc/kufgem-infoscreen/admin-token"
+echo "Eigenes Dashboard-Passwort setzen:"
+echo "sudo python3 /opt/kufgem-infoscreen/backend/set_password.py"
 echo "Bei Bedarf neu starten: sudo reboot"
 echo "Info: Die Weboberfläche ist nur für vertrauenswürdige LANs gedacht (noch kein HTTPS)."
