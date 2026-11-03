@@ -32,4 +32,27 @@ class PasswordAuthTest(unittest.TestCase):
    finally:
     app.PASSWORD_FILE=previous
 
+class WidgetSourceValidationTest(unittest.TestCase):
+ def test_weather_source(self):
+  value=copy.deepcopy(app.DEFAULT)
+  value["widgets"].append({"id":"weather","type":"weather","x":10,"y":10,"w":35,"h":25,
+    "source":{"provider":"open-meteo","location":"Kufstein","interval":15}})
+  self.assertEqual(app.validate(value)["widgets"][-1]["source"]["provider"],"open-meteo")
+ def test_rejects_untrusted_provider(self):
+  value=copy.deepcopy(app.DEFAULT)
+  value["widgets"].append({"id":"weather","type":"weather","x":10,"y":10,"w":35,"h":25,
+    "source":{"provider":"https://localhost:9999/private"}})
+  with self.assertRaises(ValueError):app.validate(value)
+ def test_rejects_bad_interval(self):
+  value=copy.deepcopy(app.DEFAULT)
+  value["widgets"].append({"id":"weather","type":"weather","x":10,"y":10,"w":35,"h":25,
+    "source":{"provider":"open-meteo","location":"Kufstein","interval":0}})
+  with self.assertRaises(ValueError):app.validate(value)
+ def test_appearance(self):
+  value=copy.deepcopy(app.DEFAULT)
+  value["overlayOpacity"]=24
+  value["widgetOpacity"]=82
+  value["widgets"][0].update({"panelOpacity":90,"radius":16,"fontScale":65})
+  self.assertIs(app.validate(value),value)
+
 if __name__=="__main__":unittest.main()
