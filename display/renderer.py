@@ -1,123 +1,210 @@
 #!/usr/bin/env python3
-"""InfoScreen SDL2/Pygame fullscreen renderer for native X11 or KMS/DRM."""
-import datetime, json, os, pathlib, socket, time, threading, sys
+"""Native full-screen display. Editor-only dark cards never render on the screen."""
+import datetime
+import json
+import os
+import pathlib
+import shutil
+import socket
+import sys
+import threading
+import time
+
 import pygame
 
-DATA=pathlib.Path(os.environ.get("INFOSCREEN_DATA_DIR","/var/lib/kufgem-infoscreen"))
+DATA = pathlib.Path(os.environ.get("INFOSCREEN_DATA_DIR", "/var/lib/kufgem-infoscreen"))
 pygame.init()
-screen=pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.mouse.set_visible(False)
-clock=pygame.time.Clock()
-layout={}
-background_image=None
-background_mtime=None
-last_load=0.0
-weather_data={}
-weather_lock=threading.Lock()
-last_weather_request=0.0
+clock = pygame.time.Clock()
+layout = {}
+background_image = None
+background_mtime = None
+last_load = 0.0
+weather_data = {}
+weather_lock = threading.Lock()
+last_weather_request = 0.0
 
-def color(value,default="#ffffff"):
- try:return pygame.Color(value)
- except (ValueError,TypeError):return pygame.Color(default)
+TITLES = {
+    "clock": "UHR", "date": "DATUM", "weather": "WETTER",
+    "traffic": "VERKEHR", "departures": "ABFAHRTEN",
+    "hostname": "GERÄT", "uptime": "LAUFZEIT",
+    "system": "SYSTEM",
+}
 
-def write(text,x,y,size,ink,max_width=None):
- font=pygame.font.Font(None,max(16,int(size)))
- content=str(text)[:240]
- if max_width is None: content=content[:180]
- else:
-  while content and font.size(content)[0]>max_width:content=content[:-1]
- surface=font.render(content,True,color(ink))
- screen.blit(surface,(int(x),int(y)))
+
+def color(value, default="#ffffff"):
+    try:
+        return pygame.Color(value)
+    except (TypeError, ValueError):
+        return pygame.Color(default)
+
+
+def font(size, bold=False):
+    return pygame.font.SysFont("dejavusans", max(13, int(size)), bold=bold)
+
+
+def draw_text(value, x, y, size, ink, width, shadow=True, bold=False):
+    """One or two uncluttered lines, fitted to the widget width."""
+    value = str(value).strip()
+    if not value or width < 12:
+        return
+    size = max(14, int(size))
+    face = font(size, bold)
+    lines = []
+    for paragraph in value.splitlines()[:2]:
+        words = paragraph.split()
+        line = ""
+        for word in words:
+            candidate = (line + " " + word).strip()
+            if line and face.size(candidate)[0] > width:
+                lines.append(line)
+                line = word
+            else:
+                line = candidate
+        if line:
+            lines.append(line)
+        if len(lines) >= 2:
+            break
+    if not lines:
+        return
+    for index, line in enumerate(lines[:2]):
+        while line and face.size(line)[0] > width:
+            line = line[:-1]
+        if not line:
+            continue
+        surface = face.render(line, True, color(ink))
+        px, py = int(x), int(y + index * size * 1.3)
+        if shadow:
+            shadow_surface = face.render(line, True, (0, 0, 0))
+            shadow_surface.set_alpha(165)
+            screen.blit(shadow_surface, (px + 2, py + 2))
+        screen.blit(surface, (px, py))
+
 
 def weather_worker():
- global weather_data
- try:
-  sys.path.insert(0,"/opt/kufgem-infoscreen/backend")
-  import app
-  data=app.widget_data().get("widgets",{})
-  with weather_lock:weather_data=data
- except Exception:pass
+    global weather_data
+    try:
+        if "/opt/kufgem-infoscreen/backend" not in sys.path:
+            sys.path.insert(0, "/opt/kufgem-infoscreen/backend")
+        import app
+        values = app.widget_data().get("widgets", {})
+        with weather_lock:
+            weather_data = values
+    except Exception:
+        pass
 
-def widget_value(w):
- kind=w.get("type")
- source=w.get("source") or {}
- now=datetime.datetime.now()
- if kind=="clock":return now.strftime("%H:%M:%S")
- if kind=="date":return now.strftime("%A, %d.%m.%Y")
- if kind=="message":return w.get("text","")
- if kind=="hostname":return socket.gethostname()
- if kind=="uptime":
-  try:
-   seconds=int(float(pathlib.Path("/proc/uptime").read_text().split()[0]))
-   return f"{seconds//86400} Tage · {(seconds%86400)//3600} Std."
-  except (OSError,ValueError):return "–"
- if kind=="system":
-  try:
-   import shutil
-   disk=shutil.disk_usage("/")
-   return f"Freier Speicher: {disk.free//1073741824} GB"
-  except OSError:return "Systemdaten nicht verfügbar"
- if kind=="divider":return "────────────────"
- if kind in ("weather","traffic","departures"):
-  if source.get("provider")=="manual":return source.get("text","")
-  if kind=="weather":
-   with weather_lock: data=weather_data.get(w.get("id"),{})
-   return data.get("text","Wetterdaten werden geladen …")
-  return "Datenquelle nicht eingerichtet"
- return ""
+
+def widget_value(widget):
+    kind = widget.get("type")
+    source = widget.get("source") or {}
+    now = datetime.datetime.now()
+    if kind == "clock":
+        return now.strftime("%H:%M")
+    if kind == "date":
+        return now.strftime("%d. %B %Y")
+    if kind == "message":
+        return widget.get("text", "").strip()
+    if kind == "hostname":
+        return socket.gethostname()
+    if kind == "uptime":
+        try:
+            seconds = int(float(pathlib.Path("/proc/uptime").read_text().split()[0]))
+            return f"{seconds // 86400} T · {(seconds % 86400) // 3600} Std."
+        except (OSError, ValueError, IndexError):
+            return ""
+    if kind == "system":
+        try:
+            disk = shutil.disk_usage("/")
+            return f"{disk.free // (1024**3)} GB frei"
+        except OSError:
+            return ""
+    if kind == "divider":
+        return "──────────"
+    if kind in ("weather", "traffic", "departures"):
+        if source.get("provider") == "manual":
+            return source.get("text", "").strip()
+        if kind == "weather" and source.get("provider") == "open-meteo":
+            with weather_lock:
+                data = weather_data.get(widget.get("id"), {})
+            return data.get("text", "").strip() if data.get("ok") else ""
+        return ""
+    return ""
+
 
 def redraw():
- width,height=screen.get_size()
- screen.fill(color(layout.get("background","#101b2d"),"#101b2d"))
- if background_image is not None:
-  screen.blit(pygame.transform.smoothscale(background_image,(width,height)),(0,0))
- shade=max(0,min(100,layout.get("overlayOpacity",12)))
- if shade:
-  overlay=pygame.Surface((width,height),pygame.SRCALPHA)
-  overlay.fill((0,0,0,int(255*shade/100)));screen.blit(overlay,(0,0))
- write(layout.get("title","KUFGEM InfoScreen"),width*.04,height*.025,height*.038,"#b7dfff")
- for w in layout.get("widgets",[]):
-  try:
-   x=int(w["x"]*width/100);y=int(w["y"]*height/100)
-   ww=max(12,int(w["w"]*width/100));hh=max(12,int(w["h"]*height/100))
-   ink=w.get("color","#ffffff")
-   panel_opacity=max(0,min(100,w.get("panelOpacity",layout.get("widgetOpacity",78))))
-   radius=int(max(0,min(100,w.get("radius",12)))*height/1080)
-   panel=pygame.Surface((ww,hh),pygame.SRCALPHA)
-   pygame.draw.rect(panel,(8,18,32,int(panel_opacity*255/100)),panel.get_rect(),border_radius=radius)
-   screen.blit(panel,(x,y))
-   padding=max(6,int(height*.014))
-   title=w.get("title") or {"clock":"Uhr","date":"Datum","message":"Mitteilung","weather":"Wetter",
-      "traffic":"Verkehr","departures":"Abfahrten","hostname":"Gerätename",
-      "uptime":"Laufzeit","system":"Systemstatus","divider":"Trennlinie"}.get(w.get("type"),"")
-   write(title,x+padding,y+padding,height*.022,ink,ww-padding*2)
-   scale=max(.3,min(2,w.get("fontScale",50)/50))
-   write(widget_value(w),x+padding,y+padding+height*.045,height*.045*scale,ink,ww-padding*2)
-  except (KeyError,TypeError,ValueError):continue
+    width, height = screen.get_size()
+    screen.fill(color(layout.get("background", "#101b2d"), "#101b2d"))
+    if background_image is not None:
+        screen.blit(pygame.transform.smoothscale(background_image, (width, height)), (0, 0))
+
+    # The real InfoScreen deliberately ignores editor-only overlayOpacity,
+    # widgetOpacity, panelOpacity and radius. No dark boxes on the live display.
+    title = layout.get("title", "KUFGEM InfoScreen")
+    if title:
+        draw_text(title, width * .035, height * .025, height * .026,
+                  "#eef7ff", width * .9, bold=True)
+
+    for widget in layout.get("widgets", []):
+        try:
+            kind = widget["type"]
+            value = widget_value(widget)
+            if not value and widget.get("showIfEmpty", False) is not True:
+                continue
+            if not value:
+                continue
+            x = widget["x"] * width / 100
+            y = widget["y"] * height / 100
+            available_width = max(16, widget["w"] * width / 100)
+            available_height = max(16, widget["h"] * height / 100)
+            ink = widget.get("color", "#ffffff")
+            scale = max(.6, min(1.6, widget.get("fontScale", 50) / 50))
+            padding = max(4, height * .008)
+            if kind in ("message", "divider"):
+                draw_text(value, x + padding, y + padding,
+                          min(height * .052 * scale, available_height * .42),
+                          ink, available_width - padding * 2, bold=(kind == "message"))
+                continue
+            small_label = widget.get("title") or TITLES.get(kind, kind.upper())
+            draw_text(small_label, x + padding, y + padding,
+                      min(height * .017, available_height * .17),
+                      "#e0eaf4", available_width - padding * 2)
+            draw_text(value, x + padding, y + padding + height * .033,
+                      min(height * .045 * scale, available_height * .37),
+                      ink, available_width - padding * 2, bold=(kind == "clock"))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+
 
 while True:
- for event in pygame.event.get():
-  if event.type==pygame.QUIT:raise SystemExit
- now=time.monotonic()
- if now-last_load>1:
-  last_load=now
-  pic=DATA/"background.img"
-  try:
-   mtime=pic.stat().st_mtime_ns
-   if mtime!=background_mtime:
-    background_image=pygame.image.load(str(pic)).convert()
-    background_mtime=mtime
-  except (OSError,pygame.error):
-   background_image=None;background_mtime=None
-  try:
-   candidate=json.loads((DATA/"layout.json").read_text(encoding="utf-8"))
-   if isinstance(candidate,dict) and isinstance(candidate.get("widgets"),list):layout=candidate
-  except (OSError,ValueError):pass
- if now-last_weather_request>60:
-  last_weather_request=now
-  threading.Thread(target=weather_worker,daemon=True).start()
- if not layout:
-  layout={"title":"KUFGEM InfoScreen","widgets":[{"type":"clock","x":6,"y":20,"w":40,"h":24}]}
- redraw()
- pygame.display.flip()
- clock.tick(10)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            raise SystemExit
+    now = time.monotonic()
+    if now - last_load > 1:
+        last_load = now
+        pic = DATA / "background.img"
+        try:
+            mtime = pic.stat().st_mtime_ns
+            if mtime != background_mtime:
+                background_image = pygame.image.load(str(pic)).convert()
+                background_mtime = mtime
+        except (OSError, pygame.error):
+            background_image = None
+            background_mtime = None
+        try:
+            candidate = json.loads((DATA / "layout.json").read_text(encoding="utf-8"))
+            if isinstance(candidate, dict) and isinstance(candidate.get("widgets"), list):
+                layout = candidate
+        except (OSError, ValueError):
+            pass
+    if now - last_weather_request > 60:
+        last_weather_request = now
+        threading.Thread(target=weather_worker, daemon=True).start()
+    if not layout:
+        layout = {"title": "KUFGEM InfoScreen", "widgets": [
+            {"type": "clock", "x": 6, "y": 20, "w": 40, "h": 24}
+        ]}
+    redraw()
+    pygame.display.flip()
+    clock.tick(10)
