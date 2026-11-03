@@ -48,6 +48,13 @@ class WidgetSourceValidationTest(unittest.TestCase):
   value["widgets"].append({"id":"weather","type":"weather","x":10,"y":10,"w":35,"h":25,
     "source":{"provider":"open-meteo","location":"Kufstein","interval":0}})
   with self.assertRaises(ValueError):app.validate(value)
+ def test_font_choices(self):
+  d=copy.deepcopy(app.DEFAULT)
+  for family in ("lato","liberation","dejavu"):
+   d["fontFamily"]=family
+   self.assertIs(app.validate(d),d)
+  d["fontFamily"]="custom-external"
+  with self.assertRaises(ValueError):app.validate(d)
  def test_appearance(self):
   value=copy.deepcopy(app.DEFAULT)
   value["overlayOpacity"]=24
