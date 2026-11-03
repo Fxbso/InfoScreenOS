@@ -194,7 +194,12 @@ def main():
         update(force=args.force, check_only=args.check)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError, tarfile.TarError, KeyError) as exc:
         log("Updater error: " + str(exc))
-        write_status("error", error=str(exc)[:200])
+        try:
+            current = json.loads(STATUS.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            current = {}
+        if current.get("result") != "rolled-back":
+            write_status("error", error=str(exc)[:200])
         sys.exit(1)
 
 
