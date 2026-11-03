@@ -11,7 +11,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "==> Ubuntu-Pakete installieren"
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter accountsservice xserver-xorg xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core
+apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter accountsservice xserver-xorg xserver-xorg-video-fbdev xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core
 echo "==> InfoScreen herunterladen"
 curl -fL --retry 3 --connect-timeout 15 "$REPO" -o "$TMP/source.tar.gz"
 mkdir -p "$TMP/src"
@@ -56,6 +56,18 @@ xset s off -dpms s noblank 2>/dev/null || true
 exec /usr/bin/python3 /opt/kufgem-infoscreen/display/renderer.py
 EOF
 chmod 0755 /usr/local/bin/infoscreen-kiosk-session
+# Hyper-V 22.04 often exposes /dev/fb0 but not a usable KMS display.
+# Use fbdev explicitly only for that environment; do not override Pi/DRM hosts.
+if [[ -e /dev/fb0 ]] && grep -qi microsoft /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+  install -d /etc/X11/xorg.conf.d
+  cat > /etc/X11/xorg.conf.d/20-infoscreen-hyperv.conf <<'EOF'
+Section "Device"
+    Identifier "Hyper-V Framebuffer"
+    Driver "fbdev"
+    Option "fbdev" "/dev/fb0"
+EndSection
+EOF
+fi
 install -d /usr/share/xsessions /etc/lightdm/lightdm.conf.d
 cat > /usr/share/xsessions/infoscreen.desktop <<'EOF'
 [Desktop Entry]
