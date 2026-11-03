@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Local dashboard API. Stdlib-only, no cloud dependencies."""
-import copy, json, os, pathlib, secrets, tempfile, threading, base64, hashlib, hmac, time
+import copy, json, os, pathlib, secrets, tempfile, threading, hashlib, hmac, time, socket, shutil, platform, subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -14,7 +14,7 @@ LOCK=threading.RLock()
 DEFAULT={"title":"KUFGEM InfoScreen","background":"#101b2d","widgets":[
  {"id":"clock","type":"clock","x":6,"y":9,"w":48,"h":27,"color":"#ffffff"},
  {"id":"message","type":"message","x":6,"y":56,"w":82,"h":22,"color":"#ffffff","text":"Willkommen bei KUFGEM"}]}
-TYPES={"clock","message","weather","departures","traffic"}
+TYPES={"clock","message","weather","departures","traffic","date","hostname","uptime","system","divider"}
 def validate(v):
  if not isinstance(v,dict): raise ValueError("Expected object")
  for k,n in [("title",120),("background",120)]:
@@ -30,8 +30,12 @@ def validate(v):
    a=w.get(k)
    if isinstance(a,bool) or not isinstance(a,(float,int)) or not 0<=a<=100: raise ValueError("Invalid geometry")
   if w["w"]<1 or w["h"]<1: raise ValueError("Invalid size")
-  for k in ("color","text","location"):
+  for k in ("color","text","location","title"):
    if k in w and (not isinstance(w[k],str) or len(w[k])>300): raise ValueError("Invalid "+k)
+  for k in ("panelOpacity","fontScale","radius"):
+   if k in w and (isinstance(w[k],bool) or not isinstance(w[k],(float,int)) or not 0<=w[k]<=100): raise ValueError("Invalid "+k)
+ for k in ("overlayOpacity","widgetOpacity"):
+  if k in v and (isinstance(v[k],bool) or not isinstance(v[k],(float,int)) or not 0<=v[k]<=100): raise ValueError("Invalid "+k)
  return v
 def load():
  with LOCK:
@@ -49,6 +53,38 @@ def save(v):
    os.replace(tmp,DATA/"layout.json")
   finally:
    if os.path.exists(tmp): os.unlink(tmp)
+def system_snapshot():
+ """Read-only operational data; never expose secrets or network configuration files."""
+ uptime=0
+ try: uptime=round(float(pathlib.Path("/proc/uptime").read_text().split()[0]))
+ except (OSError,ValueError,IndexError): pass
+ total,used,free=shutil.disk_usage("/")
+ memory={}
+ try:
+  for line in pathlib.Path("/proc/meminfo").read_text().splitlines():
+   key,_,value=line.partition(":")
+   if key in ("MemTotal","MemAvailable"): memory[key]=int(value.strip().split()[0])*1024
+ except (OSError,ValueError,IndexError): pass
+ interfaces=[]
+ try:
+  for name in sorted(os.listdir("/sys/class/net")):
+   if name=="lo":continue
+   path=pathlib.Path("/sys/class/net")/name/"operstate"
+   try:state=path.read_text().strip()
+   except OSError:state="unknown"
+   interfaces.append({"name":name,"state":state})
+ except OSError:pass
+ addresses=[]
+ try:
+  result=subprocess.run(["hostname","-I"],capture_output=True,text=True,timeout=2,check=False)
+  addresses=result.stdout.split()[:12]
+ except (OSError,subprocess.TimeoutExpired):pass
+ return {"hostname":socket.gethostname(),"platform":platform.system()+" "+platform.release(),
+  "uptimeSeconds":uptime,"disk":{"total":total,"used":used,"free":free},
+  "memory":{"total":memory.get("MemTotal",0),"available":memory.get("MemAvailable",0)},
+  "network":{"addresses":addresses,"interfaces":interfaces},
+  "software":{"name":"KUFGEM InfoScreen OS","source":"GitHub main","updateMode":"manual"}}
+
 def make_password_hash(password, salt=None):
  if salt is None: salt = secrets.token_bytes(16)
  key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 300000)
@@ -136,6 +172,9 @@ class Handler(BaseHTTPRequestHandler):
    self.send_header("Content-Length",str(len(b)))
    self.end_headers();self.wfile.write(b);return
   if path=="/api/health": return self.send_json(200,{"ok":True})
+  if path=="/api/system":
+   if not self.authorized():return self.send_json(401,{"error":"Unauthorized"})
+   return self.send_json(200,system_snapshot())
   if path=="/api/session": return self.send_json(200 if self.authorized() else 401,{"authenticated":self.authorized()})
   if path=="/app.js":
    b=(WEB.parent/"app.js").read_bytes()
