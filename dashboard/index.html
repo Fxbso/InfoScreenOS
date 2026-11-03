@@ -19,6 +19,16 @@
 #settingsPanel{padding:0;border:0;background:transparent}#systemPanel{display:grid;grid-template-columns:1fr 1fr;gap:17px}#systemInfo{display:grid;grid-template-columns:1fr 1fr;gap:12px}#systemInfo .systemline{background:#0f1a29;border:1px solid #283a51;border-radius:11px;padding:13px;overflow-wrap:anywhere;color:#d1e2f2;font-size:12px;min-height:58px}#systemInfo .systemline:first-child{grid-column:span 2}#systemInfo .systemline span{display:block;color:#7089a2;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}.settings-section h3{margin:0 0 10px;font-size:16px}.settings-section p{color:#8ea1b8;font-size:12px;line-height:1.65}
 @media(max-width:1100px){.app-shell{grid-template-columns:76px minmax(0,1fr)}.sidebar{padding:20px 10px}.brand-copy,.side-label,.tabs button .nav-text,.side-bottom .connection span{display:none}.brand{padding:0 6px 23px;justify-content:center}.tabs button{justify-content:center}.tabs button .nav-icon{font-size:20px}.side-bottom{padding:20px 0}.studio-layout{grid-template-columns:minmax(0,1fr) 290px}.content{padding:28px 23px}}
 @media(max-width:780px){.app-shell{grid-template-columns:1fr}.sidebar{height:auto;position:sticky;z-index:20;padding:10px 14px;flex-direction:row;align-items:center;gap:10px;border-right:0;border-bottom:1px solid #27374d}.brand{border:0;padding:0}.brand-copy{display:none}.tabs{display:flex;flex:1;justify-content:center}.tabs button{width:auto;padding:10px}.tabs button .nav-text{display:none}.side-label,.side-bottom{display:none}.topbar{height:54px;padding:0 18px}.content{padding:22px 15px}.page-heading{align-items:flex-start;flex-direction:column}.studio-layout,#systemPanel{grid-template-columns:1fr}#designPanel{position:static;max-height:none}#widgetCatalog{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}#wizardLayout{padding:0}#widgetWizard{height:100%;border-radius:0;width:min(490px,100%)}}
+
+.widget{transition:outline-color .13s,border-color .13s;outline-offset:-2px}
+.widget:hover{border-color:#87c6fc;box-shadow:inset 0 0 0 1px #83baff55}
+.widget.active{border-color:#8dd0ff;outline:2px solid #68b9ff;box-shadow:0 0 0 3px #0b1b2c99}
+.widget:focus-visible{outline:2px solid #b9e0ff}
+.widget-context-menu{position:fixed;z-index:60;min-width:196px;padding:6px;background:#172336;border:1px solid #38516f;border-radius:12px;box-shadow:0 20px 50px #0009,0 3px 12px #0006;backdrop-filter:blur(12px)}
+.widget-context-menu button{width:100%;display:block;text-align:left;padding:11px 13px;background:transparent;color:#e8f2ff;border-radius:7px;font-size:13px;font-weight:570}
+.widget-context-menu button:hover{background:#29425e}
+.widget-context-menu button.danger{color:#ff9ca6}
+.widget-context-menu button.danger:hover{background:#552d3d}
 </style>
 </head>
 <body>
@@ -43,7 +53,7 @@
  <section class="page-heading" id="settingsHeading" hidden><div><p class="eyebrow">GERÄTEVERWALTUNG</p><h1>System & Einstellungen.</h1><p>Gerätestatus, Netzwerk und Software im Blick.</p></div></section>
  <div class="studio-layout" id="studioLayout">
   <section id="mainStageWrap">
-   <div class="stage-shell"><div class="stage-top"><strong><span class="stage-dot"></span> Bildschirmvorschau</strong><span>16:9 · Live-Layout</span></div><div id="stage"></div><div class="stage-tip"><span>✦</span> Elemente ziehen, um sie zu positionieren. Editor-Hilfsflächen werden am echten Bildschirm nicht angezeigt.</div></div>
+   <div class="stage-shell"><div class="stage-top"><strong><span class="stage-dot"></span> Bildschirmvorschau</strong><span>16:9 · Live-Layout</span></div><div id="stage"></div><div class="stage-tip"><span>✦</span> Ziehen zum Positionieren · Doppelklick zum Bearbeiten · Rechtsklick für Aktionen · Entf zum Löschen. <span>Nur im Editor.</span></div></div>
    <p id="feedback" class="sub"></p>
   </section>
   <aside id="designPanel" class="panel">
@@ -82,6 +92,7 @@
 </div>
 </div>
 </div>
+<div id="widgetContextMenu" class="widget-context-menu" role="menu" aria-label="Widget-Aktionen" hidden></div>
 <div id="wizardLayout" hidden><div id="widgetWizard" role="dialog" aria-modal="true" aria-labelledby="wizardTitle"><div id="wizardHeader"><p class="eyebrow">WIDGET HINZUFÜGEN</p><h2 id="wizardTitle">Widget einrichten</h2></div><div id="wizardBody"><div id="wizardPreview"></div><div id="wizardFields"></div></div><div id="wizardActions"><button id="wizardCancel" type="button" class="btn quiet">Abbrechen</button><button id="wizardAdd" type="button" class="btn primary">+ Hinzufügen</button></div></div></div>
 <script defer src="/app.js"></script>
 </body></html>
