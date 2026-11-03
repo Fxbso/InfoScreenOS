@@ -11,7 +11,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 echo "==> Ubuntu-Pakete installieren"
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter xserver-xorg xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core
+apt-get install -y --no-install-recommends ca-certificates curl tar python3 python3-pygame python3-numpy libsdl2-2.0-0 lightdm lightdm-gtk-greeter accountsservice xserver-xorg xserver-xorg-input-libinput dbus-x11 x11-xserver-utils fonts-dejavu-core
 echo "==> InfoScreen herunterladen"
 curl -fL --retry 3 --connect-timeout 15 "$REPO" -o "$TMP/source.tar.gz"
 mkdir -p "$TMP/src"
@@ -43,6 +43,7 @@ if [[ ! -s /etc/kufgem-infoscreen/admin-token ]]; then
 fi
 chown root:infoscreen /etc/kufgem-infoscreen/admin-token
 chmod 0640 /etc/kufgem-infoscreen/admin-token
+systemctl unmask kufgem-infoscreen-api.service 2>/dev/null || true
 install -m 0644 "$TMP/src/packaging/kufgem-infoscreen-api.service" /etc/systemd/system/kufgem-infoscreen-api.service
 # Ubuntu's display is an X11 kiosk, not the Pi-only KMS/DRM service.
 systemctl disable --now kufgem-infoscreen-display.service 2>/dev/null || true
@@ -74,6 +75,7 @@ if [[ -f /var/lib/kufgem-infoscreen/layout.json ]]; then chmod 0644 /var/lib/kuf
 if [[ -f /var/lib/kufgem-infoscreen/background.img ]]; then chmod 0644 /var/lib/kufgem-infoscreen/background.img; fi
 echo "==> Dienste starten"
 systemctl daemon-reload
+systemctl reset-failed kufgem-infoscreen-api.service lightdm.service || true
 systemctl enable --now kufgem-infoscreen-api.service
 systemctl set-default graphical.target
 systemctl enable lightdm.service
