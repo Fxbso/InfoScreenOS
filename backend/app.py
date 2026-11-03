@@ -134,11 +134,19 @@ def system_snapshot():
   result=subprocess.run(["hostname","-I"],capture_output=True,text=True,timeout=2,check=False)
   addresses=result.stdout.split()[:12]
  except (OSError,subprocess.TimeoutExpired):pass
+ update_status={}
+ try:
+  status_file=pathlib.Path("/var/lib/kufgem-infoscreen/update-status.json")
+  if status_file.exists():update_status=json.loads(status_file.read_text(encoding="utf-8"))
+ except (OSError,ValueError):pass
+ try:
+  revision=pathlib.Path("/var/lib/kufgem-infoscreen/installed-commit").read_text(encoding="ascii").strip()
+ except OSError:revision=""
  return {"hostname":socket.gethostname(),"platform":platform.system()+" "+platform.release(),
   "uptimeSeconds":uptime,"disk":{"total":total,"used":used,"free":free},
   "memory":{"total":memory.get("MemTotal",0),"available":memory.get("MemAvailable",0)},
   "network":{"addresses":addresses,"interfaces":interfaces},
-  "software":{"name":"KUFGEM InfoScreen OS","source":"GitHub main","updateMode":"manual"}}
+  "software":{"name":"KUFGEM InfoScreen OS","source":"GitHub main","updateMode":"automatic","revision":revision[:12],"update":update_status}}
 
 def make_password_hash(password, salt=None):
  if salt is None: salt = secrets.token_bytes(16)
