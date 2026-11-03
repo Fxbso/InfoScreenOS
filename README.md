@@ -42,6 +42,17 @@ Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium 
 - ARM64 Debian package script, GitHub Actions package CI.
 - Initial image-build script based on official Raspberry Pi rpi-image-gen.
 
+## Anzeige-Design: Live-Bildschirm und Web-Editor getrennt
+
+Die **echte InfoScreen-Ausgabe** zeigt das Hintergrundbild unverändert und
+standardmäßig **keine dunklen Widget-Karten**. Gut lesbarer Text erhält
+einen dezenten Schlagschatten. Nicht konfigurierte oder leere Datenquellen
+werden auf dem Live-Bildschirm ausgeblendet; der Editor zeigt sie weiterhin
+an, damit sie konfiguriert werden können. Die alten Layout-Parameter
+`panelOpacity`, `widgetOpacity` und `overlayOpacity` wirken ausschließlich
+als Hilfsflächen im Web-Editor und ändern die Live-Anzeige nicht. Im Editor
+gibt es einen Umschalter zwischen Bearbeitungs- und Live-Vorschau.
+
 ## Web-Konfiguration (aktuelle Entwicklung)
 - **Hauptansicht**: Bildschirm-Vorschau, Positionen per Drag-and-drop, Widget-Editor,
   Bildabdunklung sowie separat einstellbare Karten-Deckkraft, Farben und Schriftgröße.
