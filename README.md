@@ -23,7 +23,7 @@ Die Anmeldung bleibt im Browser bis zu sieben Tage bestehen; eine Passwortänder
 **Sicherheit:** Den Installationscode vor Ausführung mit Root-Rechten ansehen;
 der Einzeiler lädt den aktuellen Stand des Branches `main`. Web-API nur in
 vertrauenswürdigen Netzen verwenden (kein HTTPS). Bei erneuter Installation
-bleiben Layout, Hintergrund und Admin-Token erhalten. Für VirtualBox funktioniert
+bleiben Layout, Hintergrund und Dashboard-Passwort erhalten. Für VirtualBox funktioniert
 dieser Weg ebenfalls mit einem regulär installierten Ubuntu Server.
 
 
@@ -41,6 +41,36 @@ Own native InfoScreen software for Raspberry Pi **4 Model B**, without Chromium 
 - systemd services to start display and API at boot, with crash restart.
 - ARM64 Debian package script, GitHub Actions package CI.
 - Initial image-build script based on official Raspberry Pi rpi-image-gen.
+
+## Automatische Updates ohne GitHub Actions
+
+Der Ubuntu-Installer richtet einen systemd-Timer ein. Er prüft etwa alle
+**6 Stunden mit zufälligem Versatz** den aktuellen Commit von `main` über
+die GitHub-API. Nur bei einem neuen Commit lädt er das Quellarchiv zum
+**festen Commit-SHA** herunter, prüft die erwarteten Programmdateien und
+Python-Syntax, ersetzt die Anwendung, startet die API und den Kiosk neu
+und kontrolliert die lokale API. Bei fehlgeschlagenem API-Start wird die
+vorherige Programmversion wiederhergestellt. Layout, Hintergrund und
+Passworthash liegen außerhalb des aktualisierten Anwendungsverzeichnisses.
+
+Auf der Ubuntu-VM:
+
+```bash
+systemctl list-timers kufgem-infoscreen-update.timer
+sudo python3 /usr/local/sbin/kufgem-infoscreen-update --check
+sudo systemctl start kufgem-infoscreen-update.service
+sudo journalctl -u kufgem-infoscreen-update.service -n 50 --no-pager
+```
+
+Im Webdashboard unter **Einstellungen** werden der installierte Commit
+und der Status der letzten Prüfung angezeigt. Der Timer installiert
+**Anwendungsupdates**, aber keine Ubuntu-OS-Upgrades oder neuen
+Systempakete; für geänderte Abhängigkeiten/Installer-Einstellungen das
+Installationsskript erneut ausführen. Automatische Updates von `main`
+setzen voraus, dass alle dort gemergten Änderungen für den
+Produktiveinsatz vertrauenswürdig und geprüft sind. Für produktive
+Geräte ist ein geschützter Stable-Branch bzw. feste Releases sicherer.
+Die lokale SSH-/Netzwerkkonfiguration wird vom Updater nicht verändert.
 
 ## Anzeige-Design: Live-Bildschirm und Web-Editor getrennt
 
