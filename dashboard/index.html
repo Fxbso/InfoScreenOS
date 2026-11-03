@@ -30,6 +30,14 @@
 .widget-context-menu button.danger{color:#ff9ca6}
 .widget-context-menu button.danger:hover{background:#552d3d}
 .screen-title-switch{display:flex;align-items:center;gap:9px;color:#a9bed5;font-size:12px;line-height:1.4;cursor:pointer;margin-top:12px}.screen-title-switch input{accent-color:#69aeed;width:16px;height:16px;flex:0 0 auto}
+
+/* Layout panels must never develop horizontal scrollbars. */
+html,body,.app-shell,.main-area,.content,#workspace{max-width:100%;min-width:0;overflow-x:clip}
+#designPanel,#wizardBody,#editor,#widgetWizard,#settingsPanel,#explorerPanel{min-width:0;max-width:100%;overflow-x:hidden}
+#designPanel > *,#wizardBody > *,#editor > *{max-width:100%;min-width:0}
+#designPanel input,#designPanel select,#designPanel button,
+#wizardBody input,#wizardBody select,#wizardBody button{max-width:100%;min-width:0}
+#systemInfo .systemline{overflow-wrap:anywhere;min-width:0}
 </style>
 </head>
 <body>
